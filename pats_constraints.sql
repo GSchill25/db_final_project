@@ -1,5 +1,5 @@
 -- CONSTRAINTS FOR PATS DATABASE
 --
--- by (student_1) & (student_2)
+-- by Graham Schilling & Alex Mark
 --
 --
