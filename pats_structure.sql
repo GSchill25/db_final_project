@@ -60,7 +60,6 @@ medicine_id integer,
 recommended_num_of_units numeric);
 
 CREATE TABLE visitMedicines(
-id SERIAL PRIMARY KEY,
 visit_id integer,
 medicine_id integer,
 units_given numeric,
@@ -76,7 +75,6 @@ user_id integer,
 date date);
 
 CREATE TABLE treatments (
-id SERIAL PRIMARY KEY,
 visit_id integer,
 procedure_id integer,
 successful boolean,
@@ -104,3 +102,4 @@ role character varying(255),
 username character varying(255) UNIQUE,
 password_digest character varying(255),
 active boolean DEFAULT true);
+

@@ -37,3 +37,15 @@ ADD CONSTRAINT procedureCosts_fkey
 FOREIGN KEY (procedure_id) 
 REFERENCES procedures(id)
 ON DELETE restrict;
+
+--visitMedicines composite key
+ALTER TABLE visitMedicines
+ADD CONSTRAINT visitMedicines_pkey
+PRIMARY KEY (visit_id, medicine_id);
+
+--treatment composite key
+ALTER TABLE treatments
+ADD CONSTRAINT treatments_pkey
+PRIMARY KEY (visit_id, procedure_id);
+
+
