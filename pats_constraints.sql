@@ -38,19 +38,4 @@ FOREIGN KEY (procedure_id)
 REFERENCES procedures(id)
 ON DELETE restrict;
 
---visitMedicines composite key
-ALTER TABLE visit_medicines
-ADD CONSTRAINT visit_medicines_pkey
-PRIMARY KEY (visit_id, medicine_id);
-
---treatment composite key
-ALTER TABLE treatments
-ADD CONSTRAINT treatments_pkey
-PRIMARY KEY (visit_id, procedure_id);
-
---animal_medicines composite key
-ALTER TABLE animal_medicines
-ADD CONSTRAINT animal_medicines_pkey
-PRIMARY KEY (animal_id, medicine_id);
-
 

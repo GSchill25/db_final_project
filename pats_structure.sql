@@ -12,6 +12,7 @@ active boolean DEFAULT true);
 CREATE TABLE pets(
 id SERIAL PRIMARY KEY,
 animal_id integer,
+name character varying(255),
 owner_id integer,
 female boolean,
 date_of_birth date,
@@ -54,11 +55,13 @@ unit character varying(255),
 vaccine boolean DEFAULT false);
 
 CREATE TABLE animal_medicines(
+id SERIAL PRIMARY KEY,
 animal_id integer,
 medicine_id integer,
 recommended_num_of_units numeric);
 
 CREATE TABLE visit_medicines(
+id serial PRIMARY KEY,
 visit_id integer,
 medicine_id integer,
 units_given numeric,
@@ -74,6 +77,7 @@ user_id integer,
 date date);
 
 CREATE TABLE treatments(
+id SERIAL PRIMARY KEY,
 visit_id integer,
 procedure_id integer,
 successful boolean,
