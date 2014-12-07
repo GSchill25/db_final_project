@@ -35,7 +35,7 @@ id SERIAL PRIMARY KEY,
 pet_id integer,
 date date,
 weight numeric,
-overnight_stay boolean,
+overnight_stay boolean DEFAULT false,
 total_charge integer);
 
 CREATE TABLE medicine_costs(

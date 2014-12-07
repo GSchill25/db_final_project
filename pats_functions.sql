@@ -83,15 +83,43 @@ EXECUTE PROCEDURE calculate_overnight_stay();
 
 -- set_end_date_for_medicine_costs
 -- (associated with a trigger: set_end_date_for_previous_medicine_cost)
+CREATE OR REPLACE FUNCTION set_end_date_for_medicine_costs() RETURNS TRIGGER AS $$
+    DECLARE
+        old_cost_id INTEGER;
+        new_cost_id INTEGER;
+        med INTEGER;
+    BEGIN
+        new_cost_id = (SELECT currval(pg_get_serial_sequence('medicine_costs', 'id')));
+        med = (SELECT medicine_id from medicine_costs where id = new_cost_id);
+        old_cost_id = (SELECT id from medicine_costs where end_date is null and medicine_id = med and id !=new_cost_id);
+        UPDATE medicine_costs SET end_date = current_date WHERE id = old_cost_id and med = medicine_id;
+     RETURN NULL;
+    END;
+    $$ LANGUAGE plpgsql;
 
-
-
+CREATE TRIGGER set_end_date_for_previous_medicine_cost
+AFTER INSERT ON medicine_costs
+EXECUTE PROCEDURE set_end_date_for_medicine_costs();
 
 -- set_end_date_for_procedure_costs
 -- (associated with a trigger: set_end_date_for_previous_procedure_cost)
+CREATE OR REPLACE FUNCTION set_end_date_for_procedure_costs() RETURNS TRIGGER AS $$
+    DECLARE
+        old_cost_id INTEGER;
+        new_cost_id INTEGER;
+        pr INTEGER;
+    BEGIN
+        new_cost_id = (SELECT currval(pg_get_serial_sequence('procedure_costs', 'id')));
+        pr = (SELECT procedure_id from procedure_costs where id = new_cost_id);
+        old_cost_id = (SELECT id from procedure_costs where end_date is null and procedure_id = pr and id != new_cost_id);
+        UPDATE procedure_costs SET end_date = current_date WHERE id = old_cost_id and pr = procedure_id;
+     RETURN NULL;
+    END;
+    $$ LANGUAGE PLPGSQL;
 
-
-
+CREATE TRIGGER set_end_date_for_previous_procedure_cost
+AFTER INSERT ON procedure_costs
+EXECUTE PROCEDURE set_end_date_for_procedure_costs();
 
 -- decrease_stock_amount_after_dosage
 -- (associated with a trigger: update_stock_amount_for_medicines)
@@ -109,7 +137,6 @@ CREATE OR REPLACE FUNCTION decrease_stock_amount_after_dosage() RETURNS TRIGGER 
 	  RETURN NULL;
 	END;
 	$$ LANGUAGE plpgsql;
-
 
 CREATE TRIGGER update_stock_amount_for_medicines
 AFTER INSERT ON visit_medicines
