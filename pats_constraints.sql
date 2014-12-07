@@ -38,4 +38,28 @@ FOREIGN KEY (procedure_id)
 REFERENCES procedures(id)
 ON DELETE restrict;
 
+--animalMedicine
+ALTER TABLE animal_medicines
+ADD CONSTRAINT animal_fkey
+FOREIGN KEY (animal_id)
+REFERENCES animals(id)
+ON DELETE restrict;
 
+ALTER TABLE animal_medicines
+ADD CONSTRAINT medicine_fkey
+FOREIGN KEY (medicine_id)
+REFERENCES medicines(id)
+ON DELETE restrict;
+
+--visitMedicine
+ALTER TABLE visit_medicines
+ADD CONSTRAINT visit_fkey
+FOREIGN KEY (visit_id)
+REFERENCES visits(id)
+ON DELETE restrict;
+
+ALTER TABLE visit_medicines
+ADD CONSTRAINT medicine_fkey
+FOREIGN KEY (medicine_id)
+REFERENCES medicines(id)
+ON DELETE restrict;
