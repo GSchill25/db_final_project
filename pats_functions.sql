@@ -66,8 +66,7 @@ CREATE OR REPLACE FUNCTION calculate_overnight_stay() RETURNS TRIGGER AS $$
 		length_of_time INTEGER;
 	BEGIN
 		last_visit = OLD.id;
-		length_of_time = (SELECT SUM(p.length_of_time) FROM procedures p JOIN treatments t ON p.id=t.procedure_id
-			WHERE t.visit_id=last_visit);
+		length_of_time = (SELECT SUM(p.length_of_time) FROM procedures p JOIN treatments t ON p.id=t.procedure_id WHERE t.visit_id=last_visit);
 		IF (length_of_time) >= 720 THEN 
 			UPDATE visits SET overnight_stay = true WHERE id=last_visit;
 		END IF;
@@ -96,6 +95,26 @@ EXECUTE PROCEDURE calculate_overnight_stay();
 
 -- decrease_stock_amount_after_dosage
 -- (associated with a trigger: update_stock_amount_for_medicines)
+CREATE OR REPLACE FUNCTION decrease_stock_amount_after_dosage() RETURNS TRIGGER AS $$
+	DECLARE
+		units_given INTEGER;
+		new_visit_med_id INTEGER;
+		med INTEGER;
+
+	BEGIN
+		new_visit_med_id = (SELECT currval(pg_get_serial_sequence('visit_medicines', 'id')));
+		units_given = (SELECT vm.units_given FROM visit_medicines vm WHERE id=new_visit_med_id);
+		med = (SELECT medicine_id FROM visit_medicines WHERE id = new_visit_med_id);
+		UPDATE medicines SET stock_amount = (stock_amount-units_given) WHERE id=med;
+	  RETURN NULL;
+	END;
+	$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER update_stock_amount_for_medicines
+AFTER INSERT ON visit_medicines
+EXECUTE PROCEDURE decrease_stock_amount_after_dosage();
+
 
 
 
