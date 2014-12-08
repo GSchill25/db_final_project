@@ -1,6 +1,6 @@
 -- FUNCTIONS AND TRIGGERS FOR PATS DATABASE
 --
--- by (student_1) & (student_2)
+-- by Alex Mark & Graham Schilling
 --
 --
 -- calculate_total_costs
@@ -127,9 +127,6 @@ AFTER INSERT ON visit_medicines
 EXECUTE PROCEDURE decrease_stock_amount_after_dosage();
 
 
-
-
-
 -- verify_that_medicine_requested_in_stock
 -- (takes medicine_id and units_needed as arguments and returns a boolean)
 CREATE OR REPLACE FUNCTION verify_that_medicine_requested_in_stock(medicine_id int, units_needed int) RETURNS BOOLEAN AS $$
@@ -152,4 +149,21 @@ CREATE OR REPLACE FUNCTION verify_that_medicine_requested_in_stock(medicine_id i
 
 -- verify_that_medicine_is_appropriate_for_pet
 -- (takes medicine_id and pet_id as arguments and returns a boolean)
+    CREATE OR REPLACE FUNCTION verify_that_medicine_is_appropriate_for_pet(meds int, pet int) RETURNS boolean AS $$
+        DECLARE
+            a_id INTEGER;
+            r animal_medicines%rowtype;
+        BEGIN
+            a_id = (SELECT pets.animal_id FROM pets where pets.id = pet);
+            FOR r in SELECT * FROM animal_medicines WHERE animal_id = a_id LOOP
+                IF meds = r.medicine_id THEN
+                    RETURN True; 
+                END IF;
+            END LOOP; 
+         RETURN False;
+        END;
+        $$ LANGUAGE plpgsql; 
+
+
+
 
