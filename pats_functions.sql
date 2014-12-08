@@ -7,30 +7,19 @@
 -- (associated with two triggers: update_total_costs_for_medicines_changes & update_total_costs_for_treatments_changes)
 CREATE OR REPLACE FUNCTION update_total_costs_for_medicines_changes() RETURNS TRIGGER AS $$
 	DECLARE
-		last_visit INTEGER;
-		units_given INTEGER;
-		discount REAL;
-		cost_per_unit INTEGER;
-		medicine_cost REAL;
-		r visit_medicines%rowtype;
+		amount INTEGER;
+		--NEW.visit_id
 	BEGIN
-		last_visit = (SELECT last_value FROM visits_id_seq);
-		FOR r in SELECT * FROM visit_medicines WHERE visit_medicines.id=last_visit LOOP
-			units_given = (SELECT units_given FROM r);
-			RAISE NOTICE '%',units_given;
-			discount = (SELECT discount FROM r);
-			RAISE NOTICE '%',discount;
-			cost_per_unit = (SELECT cost_per_unit FROM medicine_costs mc WHERE r.medicine_id=mc.medicine_id);
-			RAISE NOTICE '%',cost_per_unit;
-			medicine_cost = cost_per_unit * units_given * (1-discount);
-			RAISE NOTICE '%',medicine_cost;
-			UPDATE visits SET total_charge = (total_charge + medicine_cost) WHERE visits.id=last_visit;
-		
-		END LOOP;
+		amount=(SELECT ROUND(SUM(mc.cost_per_unit * vm.units_given * (1-vm.discount))) FROM visit_medicines vm JOIN medicines m ON vm.medicine_id=m.id JOIN medicine_costs mc ON m.id=mc.medicine_id WHERE vm.visit_id = NEW.id);
+		RAISE NOTICE 'new = % ----- amount is %', NEW.id, amount;
+		UPDATE visits SET total_charge = (total_charge + amount) WHERE visits.id=NEW.id;
 	  RETURN NULL;
-
 	END;
 	$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER calculate_total_costs
+AFTER UPDATE OR INSERT ON visits
+FOR EACH ROW EXECUTE PROCEDURE update_total_costs_for_medicines_changes();
 
 
 CREATE FUNCTION update_total_costs_for_treatments_changes() RETURNS TRIGGER AS $$
@@ -50,11 +39,6 @@ CREATE FUNCTION update_total_costs_for_treatments_changes() RETURNS TRIGGER AS $
 
 	END;
 	$$ LANGUAGE plpgsql;
-
-
-CREATE TRIGGER calculate_total_costs
-AFTER UPDATE OR INSERT ON visits
-EXECUTE PROCEDURE update_total_costs_for_medicines_changes();
 
 
 
@@ -148,7 +132,21 @@ EXECUTE PROCEDURE decrease_stock_amount_after_dosage();
 
 -- verify_that_medicine_requested_in_stock
 -- (takes medicine_id and units_needed as arguments and returns a boolean)
+CREATE OR REPLACE FUNCTION verify_that_medicine_requested_in_stock(medicine_id int, units_needed int) RETURNS BOOLEAN AS $$
+	DECLARE
+		stock_amount INTEGER;
+		enough_medicine BOOLEAN;
+	BEGIN
+		stock_amount = (SELECT m.stock_amount FROM medicines m WHERE id=medicine_id);
+		IF stock_amount >= units_needed THEN
+			enough_medicine = true;
+		ELSE
+			enough_medicine = false;
+		END IF;
 
+	  RETURN enough_medicine;
+	END;
+	$$ LANGUAGE plpgsql;
 
 
 
