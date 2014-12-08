@@ -17,7 +17,6 @@ CREATE OR REPLACE FUNCTION calculate_total_costs() RETURNS TRIGGER AS $$
 
         amount_treatments = (SELECT ROUND(SUM(pc.cost * (1-t.discount))) FROM treatments t JOIN procedures p ON t.procedure_id=p.id JOIN procedure_costs pc ON p.id=pc.procedure_id WHERE t.visit_id = NEW.visit_id AND pc.end_date IS NULL);
         amount_medicines = (SELECT ROUND(SUM(mc.cost_per_unit * vm.units_given * (1-vm.discount))) FROM visit_medicines vm JOIN medicines m ON vm.medicine_id=m.id JOIN medicine_costs mc ON m.id=mc.medicine_id WHERE vm.visit_id = NEW.visit_id AND mc.end_date IS NULL);
-        RAISE NOTICE 'last_visit = %, treamtents = % ---------- medicines = %', last_visit, amount_treatments, amount_medicines;
 
         IF amount_treatments IS NULL AND amount_medicines IS NOT NULL THEN
             total_amount = amount_medicines;
