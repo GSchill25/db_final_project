@@ -35,8 +35,8 @@ id SERIAL PRIMARY KEY NOT NULL,
 pet_id integer NOT NULL,
 date date NOT NULL,
 weight numeric,
-overnight_stay boolean DEFAULT false NOT NULL,
-total_charge integer NOT NULL);
+overnight_stay boolean DEFAULT false,
+total_charge integer);
 
 CREATE TABLE medicine_costs(
 id SERIAL PRIMARY KEY NOT NULL,

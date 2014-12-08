@@ -5,40 +5,41 @@
 --
 -- calculate_total_costs
 -- (associated with two triggers: update_total_costs_for_medicines_changes & update_total_costs_for_treatments_changes)
-CREATE OR REPLACE FUNCTION update_total_costs_for_medicines_changes() RETURNS TRIGGER AS $$
-	DECLARE
-		amount INTEGER;
-		--NEW.visit_id
-	BEGIN
-		amount=(SELECT ROUND(SUM(mc.cost_per_unit * vm.units_given * (1-vm.discount))) FROM visit_medicines vm JOIN medicines m ON vm.medicine_id=m.id JOIN medicine_costs mc ON m.id=mc.medicine_id WHERE vm.visit_id = NEW.id);
-		RAISE NOTICE 'new = % ----- amount is %', NEW.id, amount;
-		UPDATE visits SET total_charge = (total_charge + amount) WHERE visits.id=NEW.id;
-	  RETURN NULL;
-	END;
-	$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER calculate_total_costs
-AFTER UPDATE OR INSERT ON visits
-FOR EACH ROW EXECUTE PROCEDURE update_total_costs_for_medicines_changes();
-
-
-CREATE FUNCTION update_total_costs_for_treatments_changes() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION calculate_total_costs() RETURNS TRIGGER AS $$
 	DECLARE
 		last_visit INTEGER;
 		procedure_cost INTEGER;
 		discount REAL;
 		procedure_total REAL;
+        total INTEGER; 
 	BEGIN
-		last_visit = (SELECT currval(pg_get_serial_sequence('visits', 'id')));
-		discount = SELECT discount FROM treaments t WHERE t.visit_id=last_visit; 
-		procedure_cost = SELECT pc.cost FROM procedure_costs pc JOIN procedures p ON pc.procedure_id=p.id
-		JOIN treaments t ON p.id=t.procedure_id WHERE t.visit_id=last_visit AND pc.end_date IS NULL;
+		last_visit = NEW.visit_id;
+        total = (SELECT total_charge FROM visits where id = last_visit);
+		discount = (SELECT t.discount FROM treatments t WHERE t.visit_id=last_visit and t.id = NEW.id);
+		procedure_cost = (SELECT pc.cost FROM procedure_costs pc JOIN procedures p ON pc.procedure_id=p.id
+		JOIN treatments t ON p.id=t.procedure_id WHERE t.visit_id=last_visit AND pc.end_date IS NULL and t.id = NEW.id);
 		procedure_total = procedure_cost * (1-discount);
-		UPDATE visits SET total_charge = (total_charge + procedure_total) WHERE visits.id=last_visit;
-	  RETURN NULL;
+
+        IF total IS NOT NULL THEN 
+		  UPDATE visits SET total_charge = (total + procedure_total) WHERE id=last_visit;
+        ELSE 
+          UPDATE visits SET total_charge = procedure_total WHERE id=last_visit;
+        END IF;
+	RETURN null;
 
 	END;
 	$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_total_costs_for_medicines_changes
+AFTER UPDATE OR INSERT ON visit_medicines   
+FOR EACH ROW
+EXECUTE PROCEDURE calculate_total_costs();
+
+CREATE TRIGGER update_total_costs_for_treatments_changes
+AFTER UPDATE OR INSERT ON treatments
+FOR EACH ROW
+EXECUTE PROCEDURE calculate_total_costs();
 
 
 
@@ -49,19 +50,22 @@ CREATE OR REPLACE FUNCTION calculate_overnight_stay() RETURNS TRIGGER AS $$
 		last_visit INTEGER;
 		length_of_time INTEGER;
 	BEGIN
-		last_visit = OLD.id;
+		last_visit = OLD.visit_id;
+        RAISE NOTICE 'last_visit = %', last_visit;
 		length_of_time = (SELECT SUM(p.length_of_time) FROM procedures p JOIN treatments t ON p.id=t.procedure_id WHERE t.visit_id=last_visit);
-		IF (length_of_time) >= 720 THEN 
+		RAISE NOTICE 'length of time = %', length_of_time;
+        IF (length_of_time) > 720 THEN 
 			UPDATE visits SET overnight_stay = true WHERE id=last_visit;
+        ELSE 
+            UPDATE visits SET overnight_stay = false WHERE id=last_visit;
 		END IF;
 	 RETURN NULL;
 	END;
 	$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_overnight_stay_flag
-AFTER UPDATE ON visits
+AFTER UPDATE OR INSERT ON treatments
 FOR EACH ROW
-WHEN (OLD IS DISTINCT FROM NEW)
 EXECUTE PROCEDURE calculate_overnight_stay();
 
 
