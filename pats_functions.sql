@@ -62,7 +62,7 @@ CREATE OR REPLACE FUNCTION calculate_overnight_stay() RETURNS TRIGGER AS $$
 		last_visit INTEGER;
 		length_of_time INTEGER;
 	BEGIN
-		last_visit = OLD.visit_id;
+		last_visit = NEW.visit_id;
         RAISE NOTICE 'last_visit = %', last_visit;
 		length_of_time = (SELECT SUM(p.length_of_time) FROM procedures p JOIN treatments t ON p.id=t.procedure_id WHERE t.visit_id=last_visit);
 		RAISE NOTICE 'length of time = %', length_of_time;

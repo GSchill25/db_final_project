@@ -88,7 +88,7 @@ ALTER TABLE medicine_costs ADD CONSTRAINT validate_cost_per_unit CHECK (cost_per
 
 ALTER TABLE animal_medicines ADD CONSTRAINT val_rec_units CHECK (recommended_num_of_units>=0);
 
-ALTER TABLE stock_amount ADD CONSTRAINT val_stock CHECK (stock_amount>=0);
+ALTER TABLE medicines ADD CONSTRAINT val_stock CHECK (stock_amount>=0);
 
 ALTER TABLE visit_medicines ADD CONSTRAINT val_units_given CHECK (units_given>=0);
 
