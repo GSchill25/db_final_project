@@ -14,7 +14,7 @@ CREATE VIEW owners_view as
 
 CREATE VIEW medicines_view as
 	SELECT m.name AS "Medicine", m.description, m.stock_amount, m.method, m.unit, m.vaccine,
-	mc.cost_per_unit, mc.start_date, a.name, am.recommended_num_of_units
+	mc.cost_per_unit AS "Current Cost", mc.start_date, a.name, am.recommended_num_of_units
 	FROM medicines m JOIN medicine_costs mc ON m.id=mc.medicine_id JOIN animal_medicines am ON
 	m.id=am.medicine_id JOIN animals a ON am.animal_id=a.id 
 	WHERE mc.end_date IS NULL;

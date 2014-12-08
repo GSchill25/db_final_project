@@ -10,5 +10,13 @@ CREATE USER pats WITH LOGIN ENCRYPTED PASSWORD 'password';
 
 -- SQL to limit pats user access on key tables
 
-REVOKE UPDATE, INSERT ON table_name FROM pats;
-REVOKE UPDATE, INSERT ON table_name FROM pats;
+REVOKE DELETE ON vist_medicines FROM pats;
+REVOKE DELETE ON treatments FROM pats;
+
+--revoke units_given in vist_medicines
+REVOKE UPDATE (units_given) ON visit_medicines FROM pats;
+
+--non superusers, select access only on users table
+REVOKE ALL PRIVILEGES ON DATABASE pats_final FROM Public;
+
+GRANT SELECT ON users TO Public;

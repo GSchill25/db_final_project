@@ -6,6 +6,18 @@
 -- calculate_total_costs
 -- (associated with two triggers: update_total_costs_for_medicines_changes & update_total_costs_for_treatments_changes)
 
+CREATE OR REPLACE FUNCTION update_total_costs_for_medicines_changes() RETURNS TRIGGER AS $$
+	DECLARE
+		amount INTEGER;
+	BEGIN
+		amount=(SELECT ROUND(SUM(mc.cost_per_unit * vm.units_given * (1-vm.discount))) FROM visit_medicines vm JOIN medicines m ON vm.medicine_id=m.id JOIN medicine_costs mc ON m.id=mc.medicine_id WHERE vm.visit_id = NEW.id);
+		RAISE NOTICE 'new = % ----- amount is %', NEW.id, amount;
+		UPDATE visits SET total_charge = amount WHERE visits.id=NEW.id;
+	  RETURN NULL;
+	END;
+	$$ LANGUAGE plpgsql;
+
+
 CREATE OR REPLACE FUNCTION calculate_total_costs() RETURNS TRIGGER AS $$
 	DECLARE
 		last_visit INTEGER;
