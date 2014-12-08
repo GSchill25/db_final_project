@@ -6,38 +6,29 @@
 -- calculate_total_costs
 -- (associated with two triggers: update_total_costs_for_medicines_changes & update_total_costs_for_treatments_changes)
 
-CREATE OR REPLACE FUNCTION update_total_costs_for_medicines_changes() RETURNS TRIGGER AS $$
-	DECLARE
-		amount INTEGER;
-	BEGIN
-		amount=(SELECT ROUND(SUM(mc.cost_per_unit * vm.units_given * (1-vm.discount))) FROM visit_medicines vm JOIN medicines m ON vm.medicine_id=m.id JOIN medicine_costs mc ON m.id=mc.medicine_id WHERE vm.visit_id = NEW.id);
-		RAISE NOTICE 'new = % ----- amount is %', NEW.id, amount;
-		UPDATE visits SET total_charge = amount WHERE visits.id=NEW.id;
-	  RETURN NULL;
-	END;
-	$$ LANGUAGE plpgsql;
-
-
 CREATE OR REPLACE FUNCTION calculate_total_costs() RETURNS TRIGGER AS $$
 	DECLARE
 		last_visit INTEGER;
-		procedure_cost INTEGER;
-		discount REAL;
-		procedure_total REAL;
-        total INTEGER; 
+        amount_treatments INTEGER;
+        amount_medicines INTEGER;
+        total_amount INTEGER;
 	BEGIN
 		last_visit = NEW.visit_id;
-        total = (SELECT total_charge FROM visits where id = last_visit);
-		discount = (SELECT t.discount FROM treatments t WHERE t.visit_id=last_visit and t.id = NEW.id);
-		procedure_cost = (SELECT pc.cost FROM procedure_costs pc JOIN procedures p ON pc.procedure_id=p.id
-		JOIN treatments t ON p.id=t.procedure_id WHERE t.visit_id=last_visit AND pc.end_date IS NULL and t.id = NEW.id);
-		procedure_total = procedure_cost * (1-discount);
 
-        IF total IS NOT NULL THEN 
-		  UPDATE visits SET total_charge = (total + procedure_total) WHERE id=last_visit;
-        ELSE 
-          UPDATE visits SET total_charge = procedure_total WHERE id=last_visit;
-        END IF;
+        amount_treatments = (SELECT ROUND(SUM(pc.cost * (1-t.discount))) FROM treatments t JOIN procedures p ON t.procedure_id=p.id JOIN procedure_costs pc ON p.id=pc.procedure_id WHERE t.visit_id = NEW.visit_id AND pc.end_date IS NULL);
+        amount_medicines = (SELECT ROUND(SUM(mc.cost_per_unit * vm.units_given * (1-vm.discount))) FROM visit_medicines vm JOIN medicines m ON vm.medicine_id=m.id JOIN medicine_costs mc ON m.id=mc.medicine_id WHERE vm.visit_id = NEW.visit_id AND mc.end_date IS NULL);
+        RAISE NOTICE 'last_visit = %, treamtents = % ---------- medicines = %', last_visit, amount_treatments, amount_medicines;
+
+        IF amount_treatments IS NULL AND amount_medicines IS NOT NULL THEN
+            total_amount = amount_medicines;
+        ELSIF amount_medicines IS NULL AND amount_treatments IS NOT NULL THEN
+            total_amount = amount_treatments;
+        ELSIF amount_medicines IS NULL AND amount_treatments IS NULL THEN
+            total_amount = 0;
+        ELSE
+            total_amount = amount_treatments + amount_medicines;
+        END IF; 
+		UPDATE visits SET total_charge = total_amount WHERE id=last_visit;
 	RETURN null;
 
 	END;
@@ -63,9 +54,7 @@ CREATE OR REPLACE FUNCTION calculate_overnight_stay() RETURNS TRIGGER AS $$
 		length_of_time INTEGER;
 	BEGIN
 		last_visit = NEW.visit_id;
-        RAISE NOTICE 'last_visit = %', last_visit;
 		length_of_time = (SELECT SUM(p.length_of_time) FROM procedures p JOIN treatments t ON p.id=t.procedure_id WHERE t.visit_id=last_visit);
-		RAISE NOTICE 'length of time = %', length_of_time;
         IF (length_of_time) > 720 THEN 
 			UPDATE visits SET overnight_stay = true WHERE id=last_visit;
         ELSE 
