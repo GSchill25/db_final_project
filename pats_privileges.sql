@@ -5,7 +5,7 @@
 --
 -- SQL needed to create the pats user
 
-CREATE USER pats WITH LOGIN ENCRYPTED PASSWORD 'password';
+CREATE USER pats;
 
 
 -- SQL to limit pats user access on key tables
